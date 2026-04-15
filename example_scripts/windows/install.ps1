@@ -19,10 +19,15 @@ $ErrorActionPreference = 'Stop'
 
 $LogFile = "C:\Windows\Temp\vm-software-install.log"
 
+# Ensure log directory exists and file is writable before any other work
+$null = New-Item -ItemType Directory -Path (Split-Path $LogFile) -Force -ErrorAction SilentlyContinue
+$null = New-Item -ItemType File     -Path $LogFile               -Force -ErrorAction SilentlyContinue
+
 function Write-Log {
     param([string]$Message)
     $line = "{0} {1}" -f (Get-Date -Format 'u'), $Message
-    $line | Tee-Object -FilePath $LogFile -Append | Write-Host
+    Add-Content -Path $LogFile -Value $line -Encoding UTF8
+    Write-Host $line
 }
 
 $AppName = if ($env:APP_NAME) { $env:APP_NAME } else { 'default' }
