@@ -25,8 +25,9 @@ function Write-Log {
     $line | Tee-Object -FilePath $LogFile -Append | Write-Host
 }
 
+$AppName = if ($env:APP_NAME) { $env:APP_NAME } else { 'default' }
 Write-Log "──────────────────────────────────────────────────"
-Write-Log " VM Software Install | app=$($env:APP_NAME ?? 'default')"
+Write-Log " VM Software Install | app=$AppName"
 Write-Log "──────────────────────────────────────────────────"
 
 # ── Read region + subscription from IMDS ─────────────────────────────────────
@@ -34,10 +35,14 @@ $ImdsHeaders  = @{ Metadata = "true" }
 $ImdsBase     = "http://169.254.169.254/metadata/instance/compute"
 $ImdsQuery    = "?api-version=2021-12-13&format=text"
 
-$Region         = (Invoke-RestMethod -Uri "${ImdsBase}/location${ImdsQuery}"         -Headers $ImdsHeaders -ErrorAction SilentlyContinue) ?? "unknown"
-$SubscriptionId = (Invoke-RestMethod -Uri "${ImdsBase}/subscriptionId${ImdsQuery}"   -Headers $ImdsHeaders -ErrorAction SilentlyContinue) ?? "unknown"
-$ResourceGroup  = (Invoke-RestMethod -Uri "${ImdsBase}/resourceGroupName${ImdsQuery}" -Headers $ImdsHeaders -ErrorAction SilentlyContinue) ?? "unknown"
-$VmName         = (Invoke-RestMethod -Uri "${ImdsBase}/name${ImdsQuery}"             -Headers $ImdsHeaders -ErrorAction SilentlyContinue) ?? "unknown"
+$r              = Invoke-RestMethod -Uri "${ImdsBase}/location${ImdsQuery}"          -Headers $ImdsHeaders -ErrorAction SilentlyContinue
+$Region         = if ($r) { $r } else { 'unknown' }
+$r              = Invoke-RestMethod -Uri "${ImdsBase}/subscriptionId${ImdsQuery}"    -Headers $ImdsHeaders -ErrorAction SilentlyContinue
+$SubscriptionId = if ($r) { $r } else { 'unknown' }
+$r              = Invoke-RestMethod -Uri "${ImdsBase}/resourceGroupName${ImdsQuery}" -Headers $ImdsHeaders -ErrorAction SilentlyContinue
+$ResourceGroup  = if ($r) { $r } else { 'unknown' }
+$r              = Invoke-RestMethod -Uri "${ImdsBase}/name${ImdsQuery}"              -Headers $ImdsHeaders -ErrorAction SilentlyContinue
+$VmName         = if ($r) { $r } else { 'unknown' }
 
 Write-Log "Region:         $Region"
 Write-Log "Subscription:   $SubscriptionId"
@@ -48,7 +53,7 @@ Write-Log "VM Name:        $VmName"
 # Replace this block with your actual tooling. Configuration is
 # region/environment-aware at install time — no need to bake it into the image.
 
-Write-Log "Installing $($env:APP_NAME ?? 'default')..."
+Write-Log "Installing $AppName..."
 
 # Placeholder: download your vendor's Windows installer
 # $AgentUrl = "https://your-repo.example.com/agent/latest/windows/agent.msi"
